@@ -13,22 +13,16 @@ const UserLoginRoute = require("./routes/UserLoginRoute");
 const userLocationRouter = require("./routes/userLocationRouter");
 const userAssessmentRouter = require("./routes/userAssessmentRouter");
 const AdminAssessmentRouter = require("./routes/AdminAssessmentRouter");
-// const initializeSocket = require("./Socket");
+
 const DrAppointmentRouter = require("./routes/DrAppointmentRouter");
 const AiAssessmentRouter = require("./routes/AiAssessmentRouter");
-const { userRoleData, deleteUserData } = require("./controllers/UserDataController");
-const { getStatusAppointment } = require("./controllers/DrAppointment.controller");
-// const connectDB = require("./db/index");
-
-// import UserDataRoute from './routes/UserDataRoute.js'; // Import UserDataRoute.js functions
-// import UserLoginRoute from './routes/UserLoginRoute.js'; // Import UserLoginRoute.js functions
-// import  userLocationRouter  from "./routes/userLocationRouter.js";
-// import userAssessmentRouter from './routes/userAssessmentRouter.js'
-// import AdminAssessmentRouter from "./routes/AdminAssessmentRouter.js"
-// import initializeSocket from './Socket.js';
-// import DrAppointmentRouter from "./routes/DrAppointmentRouter.js";
-// import AiAssessmentRouter from "./routes/AiAssessmentRouter.js";
-// import connectDB from './db/index.js';
+const {
+  userRoleData,
+  deleteUserData,
+} = require("./controllers/UserDataController");
+const {
+  getStatusAppointment,
+} = require("./controllers/DrAppointment.controller");
 
 const Port = 3000; // Port number
 const app = express(); // Create express app
@@ -49,44 +43,45 @@ app.use("/api", AiAssessmentRouter);
 app.use(cors());
 
 const connectDB = async () => {
-    try {
-      const connectionInstance = await mongoose.connect(`mongodb+srv://sinanmv234:34SaKyUsLq84mP7I@cluster0.zpdseq1.mongodb.net/mindCare?retryWrites=true&w=majority&appName=Cluster0`,{ useNewUrlParser: true, useUnifiedTopology: true })
-      console.log(`MongoDB Connected: ${connectionInstance.connection.host}`)
-  }catch(error){
-      console.log(`MongoDB Connection Error: ${error.message}`);
-      process.exit(1);
+  try {
+    const connectionInstance = await mongoose.connect(
+      `mongodb+srv://sinanmv234:34SaKyUsLq84mP7I@cluster0.zpdseq1.mongodb.net/mindCare?retryWrites=true&w=majority&appName=Cluster0`,
+      { useNewUrlParser: true, useUnifiedTopology: true }
+    );
+    console.log(`MongoDB Connected: ${connectionInstance.connection.host}`);
+  } catch (error) {
+    console.log(`MongoDB Connection Error: ${error.message}`);
+    process.exit(1);
   }
-  }
-const initializeSocket=(server)=> {
-    const io = new Server(server, {
-        cors: {
-        origin: 'http://localhost:5000', // Replace with your React app's origin
-        methods: ['GET', 'POST'],
-      },
+};
+const initializeSocket = (server) => {
+  const io = new Server(server, {
+    cors: {
+      origin: "http://localhost:5000", // Replace with your React app's origin
+      methods: ["GET", "POST"],
+    },
+  });
+  io.on("connection", (socket) => {
+    console.log("User connected");
+    // You can handle socket events here
+    socket.on("userMessage", async (message) => {
+      // Process the message or delegate to  controller
+      const response = await chatWithAiController(message, socket);
     });
-    io.on('connection', (socket) => {
-      console.log('User connected');
-      // You can handle socket events here
-      socket.on('userMessage', async(message) => {
-        // Process the message or delegate to  controller
-        const response = await chatWithAiController(message,socket);  
-      });
-      
-      // Handle disconnection
-      socket.on('disconnect', () => {
-        console.log('User disconnected');
-      });
 
-      // Handle errors
-      socket.on('error', (error) => { 
-        console.error('Socket.IO error:', error);
-      }
-      );
+    // Handle disconnection
+    socket.on("disconnect", () => {
+      console.log("User disconnected");
     });
-  
-    return io;
-  }
 
+    // Handle errors
+    socket.on("error", (error) => {
+      console.error("Socket.IO error:", error);
+    });
+  });
+
+  return io;
+};
 
 const server = http.createServer(app); // Create a server using express app
 
@@ -116,7 +111,7 @@ app.delete("/user/dr/id/delete", UserDataRoute);
 
 app.get("/user/patientDetails", userRoleData);
 
-app.delete('/user/profile/:userId', deleteUserData)
+app.delete("/user/profile/:userId", deleteUserData);
 // user login routes
 
 app.post("/user/login", UserLoginRoute);
@@ -164,7 +159,7 @@ app.delete("/dr/appointment/delete", DrAppointmentRouter);
 //AI assessment
 app.get("/ai/assessment/:token", AiAssessmentRouter);
 
-app.get('/patient/reqstatus',getStatusAppointment)
+app.get("/patient/reqstatus", getStatusAppointment);
 
 const httpServer = server.listen(Port, () =>
   console.log(`Server running on port: http://localhost:${Port}`)
